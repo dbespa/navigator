@@ -1,0 +1,19 @@
+<{% extends 'traffic/layout.html' %}
+
+{% block title %}
+Редактировать текущую загруженность
+{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Редактировать текущую загруженность:</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.road_segment }}<br>
+    {{ form.congestion_type }}<br>
+    {{ form.last_updated }}<br>
+    <span>{{ error }}</span>
+    <button>Добавить</button>
+  </form>
+</div>
+{% endblock %}

@@ -40,7 +40,12 @@ class CongestionType(models.Model):
         return self.name
 
 class Traffic(models.Model):
-    road_segment = models.ForeignKey(RoadSegment, on_delete=models.CASCADE, related_name='traffics', verbose_name="Отрезок пути")
+    road_segment = models.OneToOneField(
+        RoadSegment,
+        on_delete=models.CASCADE,
+        related_name='traffic',
+        verbose_name="Отрезок пути"
+    )
     congestion_type = models.ForeignKey(CongestionType, on_delete=models.PROTECT, verbose_name="Тип загруженности")
     last_updated = models.DateTimeField(auto_now=True, verbose_name="Последнее обновление")
 

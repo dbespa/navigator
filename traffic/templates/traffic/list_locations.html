@@ -1,0 +1,21 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title %}
+Cписок населенных пунктов
+{% endblock %}
+
+{% block content %}
+<div>
+    <a href="{% url 'home' %}">Домой</a>
+    <a href="{% url 'location_create' %}">Добавить пункт</a>
+  {% if locations %}
+        {% for el in locations %}
+            <div>
+                <a href="{% url 'location_detail' el.id %}">{{ el.name }}</a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Нет записей!</p>
+    {% endif %}
+</div>
+{% endblock %}

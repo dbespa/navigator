@@ -1,0 +1,22 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title %}
+Cписок типов загруженности
+{% endblock %}
+
+{% block content %}
+<div>
+    <a href="{% url 'home' %}">Домой</a>
+    <a href="{% url 'contype_create' %}">Добавить тип загруженности</a>
+
+  {% if contypes %}
+        {% for el in contypes %}
+            <div>
+                <a href="{% url 'contype_detail' el.id %}">{{ el.name }}</a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Нет записей!</p>
+    {% endif %}
+</div>
+{% endblock %}

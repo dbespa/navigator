@@ -1,0 +1,15 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title %}
+Главная страница
+{% endblock %}
+
+{% block content %}
+<h1>Главная страница</h1>
+
+<a href="{% url 'locations' %}">Населённые пункты</a><br>
+<a href="{% url 'roads' %}">Дороги</a><br>
+<a href="{% url 'traffic' %}">Текущая загруженность</a><br>
+<a href="{% url 'contypes' %}">Типы загруженности</a><br>
+
+{% endblock %}

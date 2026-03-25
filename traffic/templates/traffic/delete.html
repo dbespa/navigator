@@ -1,0 +1,14 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title%}Удаление записи{% endblock %}
+
+{% block content %}
+<div>
+    <h1>Удаление записи</h1>
+    <h2>Вы уверены?</h2>
+    <form method="post">
+        {% csrf_token %}
+        <button>Удалить запись</button>
+    </form>
+</div>
+{% endblock %}

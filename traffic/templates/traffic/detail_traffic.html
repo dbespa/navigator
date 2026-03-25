@@ -1,0 +1,16 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title%}
+Текущая загруженность
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1>{{ traffic.road_segment }}</h1>
+    <p>{{ traffic.congestion_type }}</p>
+    <p>{{ traffic.last_updated }}</p>
+    <a href="{% url 'traffic_update' traffic.id %}">Редактировать</a>
+    <a href="{% url 'traffic' %}">Назад к списку</a>
+</div>
+
+{% endblock %}

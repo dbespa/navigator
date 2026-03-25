@@ -1,0 +1,17 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title%}
+Отрезок пути
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1>{{ road.point_a }}</h1>
+    <p>{{ road.point_b }}</p>
+    <p>{{ road.distance_km }}</p>
+    <a href="{% url 'road_delete' road.id %}">Удалить</a>
+    <a href="{% url 'road_update' road.id %}">Редактировать</a>
+    <a href="{% url 'roads' %}">Назад к списку</a>
+</div>
+
+{% endblock %}

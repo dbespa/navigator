@@ -1,0 +1,17 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title%}
+{{ location.name }}
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1>{{ location.name }}</h1>
+    <p>{{ location.latitude }}</p>
+    <p>{{ location.longitude }}</p>
+    <a href="{% url 'location_delete' location.id %}">Удалить</a>
+    <a href="{% url 'location_update' location.id %}">Редактировать</a>
+    <a href="{% url 'locations' %}">Назад к списку</a>
+</div>
+
+{% endblock %}

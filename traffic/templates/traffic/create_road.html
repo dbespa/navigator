@@ -1,0 +1,19 @@
+<{% extends 'traffic/layout.html' %}
+
+{% block title %}
+Добавление дороги
+{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Добавить дорогу:</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.point_a }}<br>
+    {{ form.point_b }}<br>
+    {{ form.distance_km }}<br>
+    <span>{{ error }}</span>
+    <button>Добавить</button>
+  </form>
+</div>
+{% endblock %}

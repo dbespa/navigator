@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-sjz=wlv7a_la=h(*tk2q4%sqd=p_nbpv$+ix0(daaqzb!pl_r!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['26.100.75.112', '26.55.35.147', '127.0.0.1']
 
 
 # Application definition
@@ -38,12 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'traffic',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -121,3 +123,20 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://26.100.75.112:3000",
+    "http://26.55.35.147:3000",
+    "http://127.0.0.1:3000",
+]
+
+CSRF_COOKIE_PATH = '/'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = False

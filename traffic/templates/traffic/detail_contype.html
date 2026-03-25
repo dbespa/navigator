@@ -1,0 +1,17 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title%}
+{{ contype.name }}
+{% endblock %}
+
+{% block content %}
+<div>
+    <h1>{{ contype.name }}</h1>
+    <p>{{ contype.time_coefficient }}</p>
+    <p>{{ contype.passability_coefficient }}</p>
+    <a href="{% url 'contype_delete' contype.id %}">Удалить</a>
+    <a href="{% url 'contype_update' contype.id %}">Редактировать</a>
+    <a href="{% url 'contypes' %}">Назад к списку</a>
+</div>
+
+{% endblock %}

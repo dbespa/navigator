@@ -1,0 +1,22 @@
+{% extends 'traffic/layout.html' %}
+
+{% block title %}
+Cписок дорог
+{% endblock %}
+
+{% block content %}
+<div>
+    <a href="{% url 'home' %}">Домой</a>
+    <a href="{% url 'road_create' %}">Добавить дорогу</a>
+
+  {% if roads %}
+        {% for el in roads %}
+            <div>
+                <a href="{% url 'road_detail' el.id %}">{{ el.point_a }} -> {{ el.point_b }}</a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Нет записей!</p>
+    {% endif %}
+</div>
+{% endblock %}
