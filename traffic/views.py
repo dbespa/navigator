@@ -12,7 +12,6 @@ def home(request):
 
 
 def location_handler(request, pk=None):
-    # Проверяем URL для update и delete
     if request.path.endswith('/update/') and pk:
         location = get_object_or_404(Location, pk=pk)
 
@@ -63,7 +62,6 @@ def location_handler(request, pk=None):
             form = LocationForm()
             return render(request, 'traffic/create_location.html', {'form': form})
 
-    # Основные GET и POST запросы
     elif request.method == 'GET':
         if pk is None:
             if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -86,7 +84,6 @@ def location_handler(request, pk=None):
 
 
 def road_handler(request, pk=None):
-    # Проверяем URL для update и delete
     if request.path.endswith('/update/') and pk:
         road = get_object_or_404(RoadSegment, pk=pk)
 
@@ -137,7 +134,6 @@ def road_handler(request, pk=None):
             form = RoadSegmentForm()
             return render(request, 'traffic/create_road.html', {'form': form})
 
-    # Основные GET и POST запросы
     elif request.method == 'GET':
         if pk is None:
             if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -160,7 +156,6 @@ def road_handler(request, pk=None):
 
 
 def contype_handler(request, pk=None):
-    # Проверяем URL для update и delete
     if request.path.endswith('/update/') and pk:
         contype = get_object_or_404(CongestionType, pk=pk)
 
@@ -211,7 +206,6 @@ def contype_handler(request, pk=None):
             form = CongestionTypeForm()
             return render(request, 'traffic/create_contype.html', {'form': form})
 
-    # Основные GET и POST запросы
     elif request.method == 'GET':
         if pk is None:
             if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -234,7 +228,6 @@ def contype_handler(request, pk=None):
 
 
 def traffic_handler(request, pk=None):
-    # Проверяем URL для update и delete
     if request.path.endswith('/update/') and pk:
         traffic = get_object_or_404(Traffic, pk=pk)
 
@@ -285,7 +278,6 @@ def traffic_handler(request, pk=None):
             form = TrafficForm()
             return render(request, 'traffic/create_traffic.html', {'form': form})
 
-    # Основные GET и POST запросы
     elif request.method == 'GET':
         if pk is None:
             if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
