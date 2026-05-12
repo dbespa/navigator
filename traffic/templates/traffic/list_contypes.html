@@ -1,10 +1,11 @@
 {% extends 'traffic/layout.html' %}
+{% load static %}
 
 {% block title %}Типы загруженности{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between mb-3">
-    <h1>⚙️ Типы загруженности</h1>
+    <h1><img src="{% static 'traffic/icons/gear-cogwheel-svgrepo-com.svg' %}" alt="Gear wheel Icon" width="24" height="24"> Типы загруженности</h1>
     <a href="{% url 'contype_create' %}" class="btn btn-primary">+ Добавить тип</a>
 </div>
 <div class="row">

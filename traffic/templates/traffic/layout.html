@@ -38,16 +38,16 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">🗺️ Навигатор</a>
+            <a class="navbar-brand" href="{% url 'home' %}"><img src="{% static 'traffic/icons/map-svgrepo-com.svg' %}" alt="Map Icon" width="35" height="35"> Навигатор</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'locations' %}">📍 Точки</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'roads' %}">🛣️ Дороги</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'traffic' %}">🚦 Загруженность</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'contypes' %}">⚙️ Типы</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'locations' %}"><img src="{% static 'traffic/icons/flag-triagle-svgrepo-com.svg' %}" alt="Flag Icon" width="24" height="24"> Точки</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'roads' %}"><img src="{% static 'traffic/icons/road-svgrepo-com.svg' %}" alt="Road Icon" width="24" height="24"> Дороги</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'traffic' %}"><img src="{% static 'traffic/icons/traffic-lights-traffic-light-svgrepo-com.svg' %}" alt="Traffic lights Icon" width="24" height="24"> Загруженность</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'contypes' %}"><img src="{% static 'traffic/icons/gear-cogwheel-svgrepo-com.svg' %}" alt="Gear wheel Icon" width="24" height="24"> Типы</a></li>
                 </ul>
             </div>
         </div>

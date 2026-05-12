@@ -1,10 +1,11 @@
 {% extends 'traffic/layout.html' %}
+{% load static %}
 
 {% block title %}Список дорог{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between mb-3">
-    <h1>🛣️ Дороги</h1>
+    <h1><img src="{% static 'traffic/icons/road-svgrepo-com.svg' %}" alt="Road Icon" width="24" height="24"> Дороги</h1>
     <a href="{% url 'road_create' %}" class="btn btn-primary">+ Добавить дорогу</a>
 </div>
 {% if roads %}
