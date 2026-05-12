@@ -240,3 +240,34 @@ def current_weights(request):
         travel_time = traffic.road_segment.distance_km * traffic.congestion_type.time_coefficient
         data[traffic.road_segment.id] = travel_time
     return JsonResponse(data)
+
+
+from django.utils.dateparse import parse_datetime
+from django.http import JsonResponse, HttpRequest
+
+
+def weights_since(request):
+    """
+    Параметры: ?since=2025-05-12T15:30:00 (ISO format)
+    """
+    since_str = request.GET.get('since')
+    if not since_str:
+        return current_weights(request)
+
+    since = parse_datetime(since_str)
+    if since is None:
+        return JsonResponse({'error': 'Invalid datetime format. Use ISO format.'}, status=400)
+
+    changed_traffic = Traffic.objects.filter(last_updated__gt=since).select_related('road_segment', 'congestion_type')
+    data = {}
+    for traffic in changed_traffic:
+        travel_time = traffic.road_segment.distance_km * traffic.congestion_type.time_coefficient
+        data[traffic.road_segment.id] = travel_time
+
+    from django.utils import timezone
+    server_time = timezone.now().isoformat()
+
+    return JsonResponse({
+        'changed': data,
+        'server_time': server_time
+    })
