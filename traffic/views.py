@@ -233,3 +233,10 @@ def get_edges_for_point(request, point_id):
     ).select_related('point_a', 'point_b', 'traffic__congestion_type')
     data = [serialize_road_segment(road) for road in roads]
     return JsonResponse(data, safe=False)
+
+def current_weights(request):
+    data = {}
+    for traffic in Traffic.objects.select_related('road_segment', 'congestion_type'):
+        travel_time = traffic.road_segment.distance_km * traffic.congestion_type.time_coefficient
+        data[traffic.road_segment.id] = travel_time
+    return JsonResponse(data)

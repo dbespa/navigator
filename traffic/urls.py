@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/contypes/', views.api_contypes, name='api_contypes'),
     path('api/traffic/', views.api_traffic, name='api_traffic'),
     path('api/graph/', views.graph_api, name='api_graph'),
+    path('api/current_weights/', views.current_weights),
     path('api/randomize_congestion/', views.randomize_congestion_api, name='api_randomize_congestion'),
     path('api/set_all_free/', views.set_all_free_api),
     path('api/set_congestion_by_time/', views.set_congestion_by_time_of_day),
