@@ -1,17 +1,26 @@
 {% extends 'traffic/layout.html' %}
 
-{% block title%}
-Отрезок пути
-{% endblock %}
+{% block title %}Отрезок пути{% endblock %}
 
 {% block content %}
-<div>
-    <h1>{{ road.point_a }}</h1>
-    <p>{{ road.point_b }}</p>
-    <p>{{ road.distance_km }}</p>
-    <a href="{% url 'road_delete' road.id %}">Удалить</a>
-    <a href="{% url 'road_update' road.id %}">Редактировать</a>
-    <a href="{% url 'roads' %}">Назад к списку</a>
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h2>Дорога</h2>
+    </div>
+    <div class="card-body">
+        <p><strong>Из:</strong> {{ road.point_a.name }}</p>
+        <p><strong>В:</strong> {{ road.point_b.name }}</p>
+        <p><strong>Расстояние:</strong> {{ road.distance_km }} км</p>
+        {% if road.traffic %}
+            <p><strong>Текущая загруженность:</strong>
+                <span class="badge" style="background-color: {{ road.traffic.congestion_type.color }};">
+                    {{ road.traffic.congestion_type.name }}
+                </span>
+            </p>
+        {% endif %}
+        <a href="{% url 'road_update' road.id %}" class="btn btn-warning">Редактировать</a>
+        <a href="{% url 'road_delete' road.id %}" class="btn btn-danger">Удалить</a>
+        <a href="{% url 'roads' %}" class="btn btn-secondary">Назад</a>
+    </div>
 </div>
-
 {% endblock %}

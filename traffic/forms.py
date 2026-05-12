@@ -29,22 +29,21 @@ class RoadSegmentForm(ModelForm):
 class CongestionTypeForm(ModelForm):
     class Meta:
         model = CongestionType
-        fields = ['name', 'time_coefficient', 'passability_coefficient']
+        fields = ['name', 'time_coefficient']
 
         widgets = {
             'name': TextInput(attrs={'class': 'form-control', 'placeholder': 'Название'}),
             'time_coefficient': NumberInput(attrs={'class': 'form-control', 'placeholder': 'Коэффициент времени'}),
-            'passability_coefficient': NumberInput(attrs={'class': 'form-control', 'placeholder': 'Коэффициент проходимости'}),
         }
 
 class TrafficForm(ModelForm):
     class Meta:
         model = Traffic
         fields = '__all__'
+        exclude = ['last_updated']
 
         widgets = {
             'road_segment': forms.Select(attrs={'class': 'form-control', 'placeholder': 'Дорога'}),
             'congestion_type': forms.Select(attrs={'class': 'form-control', 'placeholder': 'Тип загруженности'}),
-            'last_updated': DateTimeInput(attrs={'class': 'form-control', 'placeholder': 'Дата'}),
         }
 

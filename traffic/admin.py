@@ -17,7 +17,7 @@ class RoadSegmentAdmin(admin.ModelAdmin):
 
 @admin.register(CongestionType)
 class CongestionTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'time_coefficient', 'passability_coefficient', 'color_display')
+    list_display = ('name', 'time_coefficient')
 
     def color_display(self, obj):
         return format_html(

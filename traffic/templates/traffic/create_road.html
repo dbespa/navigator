@@ -1,19 +1,35 @@
-<{% extends 'traffic/layout.html' %}
+{% extends 'traffic/layout.html' %}
 
 {% block title %}
 Добавление дороги
 {% endblock %}
 
 {% block content %}
-<div>
-  <h1>Добавить дорогу:</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.point_a }}<br>
-    {{ form.point_b }}<br>
-    {{ form.distance_km }}<br>
-    <span>{{ error }}</span>
-    <button>Добавить</button>
-  </form>
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h2>Добавить дорогу</h2>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Точка А</label>
+                {{ form.point_a }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Точка Б</label>
+                {{ form.point_b }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Расстояние (км)</label>
+                {{ form.distance_km }}
+            </div>
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-success">Сохранить</button>
+            <a href="{% url 'roads' %}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
 </div>
 {% endblock %}

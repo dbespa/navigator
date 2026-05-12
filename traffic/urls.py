@@ -28,37 +28,13 @@ urlpatterns = [
     path('traffic/<int:pk>/update/', views.traffic_handler, name='traffic_update'),
     path('traffic/<int:pk>/delete/', views.traffic_handler, name='traffic_delete'),
 
-
-
-
-
-
-
-    # path('locations', views.list_locations, name='locations'),
-    # path('roads', views.list_roads, name='roads'),
-    # path('contypes', views.list_contypes, name='contypes'),
-    # path('traffic', views.list_traffic, name='traffic'),
-    #
-    # path('get_locations', views.get_locations, name='get_locations'),
-    # path('get_roads', views.get_roads, name='get_roads'),
-    # path('get_con_types', views.get_congestion_types, name='get_con_types'),
-    # path('get_traffic', views.get_traffic, name='get_traffic'),
-    #
-    # path('create_location', views.create_location, name='create_location'),
-    # path('create_road', views.create_road, name='create_road'),
-    # path('create_contype', views.create_contype, name='create_contype'),
-    #
-    # path('locations/<int:pk>', views.LocationDetailView.as_view(), name='detail_location'),
-    # path('roads/<int:pk>', views.RoadDetailView.as_view(), name='detail_road'),
-    # path('contypes/<int:pk>', views.ContypeDetailView.as_view(), name='detail_contype'),
-    # path('traffic/<int:pk>', views.TrafficDetailView.as_view(), name='detail_traffic'),
-    #
-    # path('locations/<int:pk>/update', views.LocationUpdateView.as_view(), name='update_location'),
-    # path('roads/<int:pk>/update', views.RoadUpdateView.as_view(), name='update_road'),
-    # path('contypes/<int:pk>/update', views.ContypeUpdateView.as_view(), name='update_contype'),
-    # path('traffic/<int:pk>/update', views.TrafficUpdateView.as_view(), name='update_traffic'),
-    #
-    # path('locations/<int:pk>/delete', views.LocationDeleteView.as_view(), name='delete_location'),
-    # path('roads/<int:pk>/delete', views.RoadDeleteView.as_view(), name='delete_road'),
-    # path('contypes/<int:pk>/delete', views.ContypeDeleteView.as_view(), name='delete_contype'),
+    path('api/locations/', views.api_locations, name='api_locations'),
+    path('api/roads/', views.api_roads, name='api_roads'),
+    path('api/contypes/', views.api_contypes, name='api_contypes'),
+    path('api/traffic/', views.api_traffic, name='api_traffic'),
+    path('api/graph/', views.graph_api, name='api_graph'),
+    path('api/randomize_congestion/', views.randomize_congestion_api, name='api_randomize_congestion'),
+    path('api/set_all_free/', views.set_all_free_api),
+    path('api/set_congestion_by_time/', views.set_congestion_by_time_of_day),
+    path('api/point/<int:point_id>/edges/', views.get_edges_for_point),
 ]

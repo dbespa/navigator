@@ -1,14 +1,19 @@
 {% extends 'traffic/layout.html' %}
 
-{% block title%}Удаление записи{% endblock %}
+{% block title %}Удаление{{ type }}{% endblock %}
 
 {% block content %}
-<div>
-    <h1>Удаление записи</h1>
-    <h2>Вы уверены?</h2>
-    <form method="post">
-        {% csrf_token %}
-        <button>Удалить запись</button>
-    </form>
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h2>Подтверждение удаления</h2>
+    </div>
+    <div class="card-body">
+        <p>Вы уверены, что хотите удалить <strong>{{ object }}</strong>?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Да, удалить</button>
+            <a href="{% url cancel_url cancel_id %}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
 </div>
 {% endblock %}

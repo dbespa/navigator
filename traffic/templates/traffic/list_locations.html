@@ -1,21 +1,27 @@
 {% extends 'traffic/layout.html' %}
 
-{% block title %}
-Cписок населенных пунктов
-{% endblock %}
+{% block title %}Список точек{% endblock %}
 
 {% block content %}
-<div>
-    <a href="{% url 'home' %}">Домой</a>
-    <a href="{% url 'location_create' %}">Добавить пункт</a>
-  {% if locations %}
-        {% for el in locations %}
-            <div>
-                <a href="{% url 'location_detail' el.id %}">{{ el.name }}</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>📍 Населенные пункты</h1>
+    <a href="{% url 'location_create' %}" class="btn btn-primary">+ Добавить точку</a>
+</div>
+<div class="row">
+    {% if locations %}
+        {% for loc in locations %}
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ loc.name }}</h5>
+                    <p class="card-text text-muted">Координаты: {{ loc.latitude }}, {{ loc.longitude }}</p>
+                    <a href="{% url 'location_detail' loc.id %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                </div>
             </div>
+        </div>
         {% endfor %}
     {% else %}
-        <p>Нет записей!</p>
+        <div class="alert alert-warning">Нет записей</div>
     {% endif %}
 </div>
 {% endblock %}

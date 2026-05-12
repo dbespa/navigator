@@ -1,439 +1,235 @@
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import DetailView, UpdateView, DeleteView
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.db import models
+import random
 
 from traffic.forms import LocationForm, RoadSegmentForm, CongestionTypeForm, TrafficForm
 from traffic.models import Location, RoadSegment, CongestionType, Traffic
 
 
+def serialize_road_segment(road):
+    traffic = getattr(road, 'traffic', None)
+    coefficient = traffic.congestion_type.time_coefficient if traffic else 1.0
+    return {
+        'id': road.id,
+        'point_a_id': road.point_a.id,
+        'point_a_name': road.point_a.name,
+        'point_b_id': road.point_b.id,
+        'point_b_name': road.point_b.name,
+        'distance_km': road.distance_km,
+        'coefficient': coefficient,
+    }
+
+def serialize_traffic(traffic):
+    return {
+        'road_segment_id': traffic.road_segment.id,
+        'road_name': str(traffic.road_segment),
+        'congestion_type_id': traffic.congestion_type.id,
+        'congestion_type_name': traffic.congestion_type.name,
+        'time_coefficient': traffic.congestion_type.time_coefficient,
+        'last_updated': traffic.last_updated.isoformat(),
+    }
+
+
+def create_crud_handler(model, form_class, template_base, serialize_func=None):
+    def handler(request, pk=None):
+        if request.method == 'GET' and pk is None and (
+            request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        ):
+            if serialize_func is not None:
+                queryset = model.objects.all()
+                if model == RoadSegment:
+                    queryset = queryset.select_related('point_a', 'point_b', 'traffic__congestion_type')
+                elif model == Traffic:
+                    queryset = queryset.select_related('road_segment', 'congestion_type')
+                data = [serialize_func(obj) for obj in queryset]
+            else:
+                data = list(model.objects.all().values())
+            return JsonResponse(data, safe=False)
+
+        if pk is not None and request.path.endswith('/delete/'):
+            obj = get_object_or_404(model, pk=pk)
+            if request.method == 'POST':
+                obj.delete()
+                return redirect(f'{template_base}s')
+            return render(request, 'traffic/delete.html', {
+                'object': obj,
+                'type': model.__name__,
+                'cancel_url': f'{template_base}_detail',
+                'cancel_id': obj.id,
+            })
+
+        if (pk is not None and request.path.endswith('/update/')) or request.path.endswith('/create/'):
+            is_update = pk is not None and request.path.endswith('/update/')
+            obj = get_object_or_404(model, pk=pk) if is_update else None
+            if request.method == 'POST':
+                form = form_class(request.POST, instance=obj)
+                if form.is_valid():
+                    saved_obj = form.save()
+                    if is_update:
+                        return redirect(f'{template_base}_detail', pk=saved_obj.pk)
+                    else:
+                        return redirect(f'{template_base}s')
+                return render(request, f'traffic/create_{template_base}.html', {
+                    'form': form,
+                    template_base: obj,
+                    'error': 'Форма была неверной',
+                })
+            else:
+                form = form_class(instance=obj)
+                return render(request, f'traffic/create_{template_base}.html', {
+                    'form': form,
+                    template_base: obj,
+                })
+
+        if pk is not None:
+            obj = get_object_or_404(model, pk=pk)
+            if model == Traffic:
+                obj = get_object_or_404(Traffic.objects.select_related('road_segment', 'congestion_type'), pk=pk)
+            elif model == RoadSegment:
+                obj = get_object_or_404(RoadSegment.objects.select_related('point_a', 'point_b'), pk=pk)
+            return render(request, f'traffic/detail_{template_base}.html', {template_base: obj})
+
+        queryset = model.objects.all()
+        if model == RoadSegment:
+            queryset = queryset.select_related('point_a', 'point_b')
+        elif model == Traffic:
+            queryset = queryset.select_related('road_segment', 'congestion_type')
+        elif model == Location:
+            queryset = queryset.order_by('name')
+        return render(request, f'traffic/list_{template_base}s.html', {f'{template_base}s': queryset})
+
+    return handler
+
+location_handler = create_crud_handler(Location, LocationForm, 'location')
+road_handler = create_crud_handler(RoadSegment, RoadSegmentForm, 'road', serialize_func=serialize_road_segment)
+contype_handler = create_crud_handler(CongestionType, CongestionTypeForm, 'contype')
+traffic_handler = create_crud_handler(Traffic, TrafficForm, 'traffic', serialize_func=serialize_traffic)
+
 def home(request):
     return render(request, 'traffic/home.html')
 
+def graph_api(request):
+    locations = Location.objects.all().values('id', 'name', 'latitude', 'longitude')
+    roads = RoadSegment.objects.select_related('point_a', 'point_b', 'traffic__congestion_type').all()
+    edges = []
+    for road in roads:
+        coeff = road.traffic.congestion_type.time_coefficient if hasattr(road, 'traffic') else 1.0
+        edges.append({
+            'id': road.id,
+            'from': road.point_a.id,
+            'to': road.point_b.id,
+            'distance_km': road.distance_km,
+            'time_coefficient': coeff,
+            'travel_time_minutes': road.distance_km * coeff
+        })
+    return JsonResponse({
+        'locations': list(locations),
+        'edges': edges,
+    })
 
-def location_handler(request, pk=None):
-    if request.path.endswith('/update/') and pk:
-        location = get_object_or_404(Location, pk=pk)
+def api_locations(request):
+    data = list(Location.objects.all().values('id', 'name', 'latitude', 'longitude'))
+    return JsonResponse(data, safe=False)
 
-        if request.method == 'POST':
-            form = LocationForm(request.POST, instance=location)
-            if form.is_valid():
-                form.save()
-                return redirect('location_detail', pk=location.pk)
-            else:
-                return render(request, 'traffic/create_location.html', {
-                    'form': form,
-                    'location': location,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = LocationForm(instance=location)
-            return render(request, 'traffic/create_location.html', {
-                'form': form,
-                'location': location
-            })
+def api_roads(request):
+    roads = RoadSegment.objects.select_related('point_a', 'point_b', 'traffic__congestion_type').all()
+    data = [serialize_road_segment(road) for road in roads]
+    return JsonResponse(data, safe=False)
 
-    elif request.path.endswith('/delete/') and pk:
-        location = get_object_or_404(Location, pk=pk)
+def api_contypes(request):
+    data = list(CongestionType.objects.all().values('id', 'name', 'time_coefficient'))
+    return JsonResponse(data, safe=False)
 
-        if request.method == 'POST':
-            location.delete()
-            return redirect('locations')
-        else:
-            return render(request, 'traffic/delete.html', {
-                'object': location,
-                'type': 'Location',
-                'cancel_url': 'location_detail',
-                'cancel_id': location.id
-            })
+def api_traffic(request):
+    traffics = Traffic.objects.select_related('road_segment', 'congestion_type').all()
+    data = [serialize_traffic(t) for t in traffics]
+    return JsonResponse(data, safe=False)
 
-    elif request.path.endswith('/create/'):
-        if request.method == 'POST':
-            form = LocationForm(request.POST)
-            if form.is_valid():
-                form.save()
-                return redirect('locations')
-            else:
-                return render(request, 'traffic/create_location.html', {
-                    'form': form,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = LocationForm()
-            return render(request, 'traffic/create_location.html', {'form': form})
+@csrf_exempt
+def randomize_congestion_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST allowed'}, status=405)
 
-    elif request.method == 'GET':
-        if pk is None:
-            if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                locations = Location.objects.all().values()
-                return JsonResponse(list(locations), safe=False)
-            else:
-                locations = Location.objects.all().order_by('name')
-                return render(request, 'traffic/list_locations.html', {'locations': locations})
-        else:
-            location = get_object_or_404(Location, pk=pk)
-            return render(request, 'traffic/detail_location.html', {'location': location})
+    try:
+        free = CongestionType.objects.get(name='Свободно')
+        medium = CongestionType.objects.get(name='Затор')
+        jam = CongestionType.objects.get(name='Пробка')
+    except CongestionType.DoesNotExist as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
-    elif request.method == 'POST':
-        form = LocationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('locations')
-        else:
-            return render(request, 'traffic/create_location.html', {'form': form, 'error': 'Форма была неверной'})
+    prob_free = float(request.POST.get('prob_free', 0.6))
+    prob_medium = float(request.POST.get('prob_medium', 0.3))
+    prob_jam = float(request.POST.get('prob_jam', 0.1))
+    weights = [prob_free, prob_medium, prob_jam]
+    total = sum(weights)
+    weights = [w / total for w in weights]
+
+    types = [free, medium, jam]
+
+    updated = 0
+    for traffic in Traffic.objects.select_related('congestion_type'):
+        new_type = random.choices(types, weights=weights)[0]
+        if traffic.congestion_type != new_type:
+            traffic.congestion_type = new_type
+            traffic.save()
+            updated += 1
+
+    return JsonResponse({'status': 'ok', 'updated': updated})
 
 
-def road_handler(request, pk=None):
-    if request.path.endswith('/update/') and pk:
-        road = get_object_or_404(RoadSegment, pk=pk)
+@csrf_exempt
+def set_all_free_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
 
-        if request.method == 'POST':
-            form = RoadSegmentForm(request.POST, instance=road)
-            if form.is_valid():
-                form.save()
-                return redirect('road_detail', pk=road.pk)
-            else:
-                return render(request, 'traffic/create_road.html', {
-                    'form': form,
-                    'road': road,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = RoadSegmentForm(instance=road)
-            return render(request, 'traffic/create_road.html', {
-                'form': form,
-                'road': road
-            })
+    try:
+        free_type = CongestionType.objects.get(name='Свободно')
+    except CongestionType.DoesNotExist:
+        return JsonResponse({'error': 'Тип "Свободно" не найден'}, status=404)
 
-    elif request.path.endswith('/delete/') and pk:
-        road = get_object_or_404(RoadSegment, pk=pk)
+    updated = Traffic.objects.update(congestion_type=free_type)
+    return JsonResponse({'status': 'ok', 'updated': updated})
 
-        if request.method == 'POST':
-            road.delete()
-            return redirect('roads')
-        else:
-            return render(request, 'traffic/delete.html', {
-                'object': road,
-                'type': 'RoadSegment',
-                'cancel_url': 'road_detail',
-                'cancel_id': road.id
-            })
+@csrf_exempt
+def set_congestion_by_time_of_day(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
 
-    elif request.path.endswith('/create/'):
-        if request.method == 'POST':
-            form = RoadSegmentForm(request.POST)
-            if form.is_valid():
-                form.save()
-                return redirect('roads')
-            else:
-                return render(request, 'traffic/create_road.html', {
-                    'form': form,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = RoadSegmentForm()
-            return render(request, 'traffic/create_road.html', {'form': form})
+    from datetime import datetime
+    now = datetime.now().hour
 
-    elif request.method == 'GET':
-        if pk is None:
-            if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                roads = RoadSegment.objects.all().values()
-                return JsonResponse(list(roads), safe=False)
-            else:
-                roads = RoadSegment.objects.all()
-                return render(request, 'traffic/list_roads.html', {'roads': roads})
-        else:
-            road = get_object_or_404(RoadSegment, pk=pk)
-            return render(request, 'traffic/detail_road.html', {'road': road})
+    if 7 <= now < 10:
+        probs = {'Свободно': 0.1, 'Затор': 0.3, 'Пробка': 0.6}
+    elif 10 <= now < 17:
+        probs = {'Свободно': 0.7, 'Затор': 0.2, 'Пробка': 0.1}
+    elif 17 <= now < 20:
+        probs = {'Свободно': 0.2, 'Затор': 0.3, 'Пробка': 0.5}
+    else:
+        probs = {'Свободно': 0.9, 'Затор': 0.1, 'Пробка': 0.0}
 
-    elif request.method == 'POST':
-        form = RoadSegmentForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('roads')
-        else:
-            return render(request, 'traffic/create_road.html', {'form': form, 'error': 'Форма была неверной'})
+    types_map = {t.name: t for t in CongestionType.objects.all()}
+    if not all(name in types_map for name in probs):
+        return JsonResponse({'error': 'Не найдены нужные типы загруженности'}, status=500)
 
+    updated = 0
+    for traffic in Traffic.objects.select_related('congestion_type'):
+        import random
+        names = list(probs.keys())
+        weights = list(probs.values())
+        chosen_name = random.choices(names, weights=weights)[0]
+        new_type = types_map[chosen_name]
+        if traffic.congestion_type != new_type:
+            traffic.congestion_type = new_type
+            traffic.save()
+            updated += 1
 
-def contype_handler(request, pk=None):
-    if request.path.endswith('/update/') and pk:
-        contype = get_object_or_404(CongestionType, pk=pk)
+    return JsonResponse({'status': 'ok', 'updated': updated, 'period': now})
 
-        if request.method == 'POST':
-            form = CongestionTypeForm(request.POST, instance=contype)
-            if form.is_valid():
-                form.save()
-                return redirect('contype_detail', pk=contype.pk)
-            else:
-                return render(request, 'traffic/create_contype.html', {
-                    'form': form,
-                    'contype': contype,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = CongestionTypeForm(instance=contype)
-            return render(request, 'traffic/create_contype.html', {
-                'form': form,
-                'contype': contype
-            })
-
-    elif request.path.endswith('/delete/') and pk:
-        contype = get_object_or_404(CongestionType, pk=pk)
-
-        if request.method == 'POST':
-            contype.delete()
-            return redirect('contypes')
-        else:
-            return render(request, 'traffic/delete.html', {
-                'object': contype,
-                'type': 'CongestionType',
-                'cancel_url': 'contype_detail',
-                'cancel_id': contype.id
-            })
-
-    elif request.path.endswith('/create/'):
-        if request.method == 'POST':
-            form = CongestionTypeForm(request.POST)
-            if form.is_valid():
-                form.save()
-                return redirect('contypes')
-            else:
-                return render(request, 'traffic/create_contype.html', {
-                    'form': form,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = CongestionTypeForm()
-            return render(request, 'traffic/create_contype.html', {'form': form})
-
-    elif request.method == 'GET':
-        if pk is None:
-            if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                contypes = CongestionType.objects.all().values()
-                return JsonResponse(list(contypes), safe=False)
-            else:
-                contypes = CongestionType.objects.all()
-                return render(request, 'traffic/list_contypes.html', {'contypes': contypes})
-        else:
-            contype = get_object_or_404(CongestionType, pk=pk)
-            return render(request, 'traffic/detail_contype.html', {'contype': contype})
-
-    elif request.method == 'POST':
-        form = CongestionTypeForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('contypes')
-        else:
-            return render(request, 'traffic/create_contype.html', {'form': form, 'error': 'Форма была неверной'})
-
-
-def traffic_handler(request, pk=None):
-    if request.path.endswith('/update/') and pk:
-        traffic = get_object_or_404(Traffic, pk=pk)
-
-        if request.method == 'POST':
-            form = TrafficForm(request.POST, instance=traffic)
-            if form.is_valid():
-                form.save()
-                return redirect('traffic_detail', pk=traffic.pk)
-            else:
-                return render(request, 'traffic/create_traffic.html', {
-                    'form': form,
-                    'traffic': traffic,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = TrafficForm(instance=traffic)
-            return render(request, 'traffic/create_traffic.html', {
-                'form': form,
-                'traffic': traffic
-            })
-
-    elif request.path.endswith('/delete/') and pk:
-        traffic = get_object_or_404(Traffic, pk=pk)
-
-        if request.method == 'POST':
-            traffic.delete()
-            return redirect('traffic')
-        else:
-            return render(request, 'traffic/delete.html', {
-                'object': traffic,
-                'type': 'Traffic',
-                'cancel_url': 'traffic_detail',
-                'cancel_id': traffic.id
-            })
-
-    elif request.path.endswith('/create/'):
-        if request.method == 'POST':
-            form = TrafficForm(request.POST)
-            if form.is_valid():
-                form.save()
-                return redirect('traffic')
-            else:
-                return render(request, 'traffic/create_traffic.html', {
-                    'form': form,
-                    'error': 'Форма была неверной'
-                })
-        else:
-            form = TrafficForm()
-            return render(request, 'traffic/create_traffic.html', {'form': form})
-
-    elif request.method == 'GET':
-        if pk is None:
-            if request.GET.get('format') == 'json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                traffics = Traffic.objects.all().values()
-                return JsonResponse(list(traffics), safe=False)
-            else:
-                traffics = Traffic.objects.all().select_related('road_segment', 'congestion_type')
-                return render(request, 'traffic/list_traffic.html', {'traffics': traffics})
-        else:
-            traffic = get_object_or_404(Traffic.objects.select_related('road_segment', 'congestion_type'), pk=pk)
-            return render(request, 'traffic/detail_traffic.html', {'traffic': traffic})
-
-    elif request.method == 'POST':
-        form = TrafficForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('traffic')
-        else:
-            return render(request, 'traffic/create_traffic.html', {'form': form, 'error': 'Форма была неверной'})
-
-# def list_locations(request):
-#     locations = Location.objects.all().order_by('name')
-#     return render(request, 'traffic/list_locations.html', {'locations': locations})
-#
-# def list_roads(request):
-#     roads = RoadSegment.objects.all()
-#     return render(request, 'traffic/list_roads.html', {'roads': roads})
-#
-# def roads(request):
-#     if request.method == 'GET':
-#         return list_roads(request)
-#     elif request.method == 'POST':
-#         pass
-#
-# def list_contypes(request):
-#     contypes = CongestionType.objects.all()
-#     return render(request, 'traffic/list_contypes.html', {'contypes': contypes})
-#
-# def list_traffic(request):
-#     traffics = RoadSegment.objects.all()
-#     return render(request, 'traffic/list_traffic.html', {'traffics': traffics})
-#
-# # @ensure_csrf_cookie
-# def get_locations(request):
-#     locations = Location.objects.all().values()
-#     return JsonResponse(list(locations), safe=False)
-#
-# @csrf_exempt
-# def get_roads(request):
-#     print(request.method)
-#     roads = RoadSegment.objects.all().values()
-#     return JsonResponse(list(roads), safe=False)
-#
-# # @ensure_csrf_cookie
-# def get_congestion_types(request):
-#     congestion_types = CongestionType.objects.all().values()
-#     return JsonResponse(list(congestion_types), safe=False)
-#
-# # @ensure_csrf_cookie
-# def get_traffic(request):
-#     traffic = Traffic.objects.all().values()
-#     return JsonResponse(list(traffic), safe=False)
-#
-# def create_location(request):
-#     error = ''
-#     if request.method == 'POST':
-#         form = LocationForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#         else:
-#             error='Форма была неверной'
-#     form = LocationForm()
-#     data = {
-#         'form': form,
-#     }
-#     return render(request, 'traffic/create_location.html', data)
-#
-# def create_road(request):
-#     error = ''
-#     if request.method == 'POST':
-#         form = RoadSegmentForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#         else:
-#             error = 'Форма была неверной'
-#     form = RoadSegmentForm()
-#     data = {
-#         'form': form,
-#     }
-#     return render(request, 'traffic/create_road.html', data)
-#
-# def create_contype(request):
-#     error = ''
-#     if request.method == 'POST':
-#         form = CongestionTypeForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#         else:
-#             error = 'Форма была неверной'
-#     form = CongestionTypeForm()
-#     data = {
-#         'form': form,
-#     }
-#     return render(request, 'traffic/create_contype.html', data)
-#
-# class LocationDetailView(DetailView):
-#     model = Location
-#     template_name = 'traffic/detail_location.html'
-#     context_object_name = 'location'
-#
-# class RoadDetailView(DetailView):
-#     model = RoadSegment
-#     template_name = 'traffic/detail_road.html'
-#     context_object_name = 'road'
-#
-# class ContypeDetailView(DetailView):
-#     model = CongestionType
-#     template_name = 'traffic/detail_contype.html'
-#     context_object_name = 'contype'
-#
-# class TrafficDetailView(DetailView):
-#     model = Traffic
-#     template_name = 'traffic/detail_traffic.html'
-#     context_object_name = 'traffic'
-#
-# class LocationUpdateView(UpdateView):
-#     model = Location
-#     template_name = 'traffic/create_location.html'
-#     form_class = LocationForm
-#
-# class RoadUpdateView(UpdateView):
-#     model = RoadSegment
-#     template_name = 'traffic/create_road.html'
-#     form_class = RoadSegmentForm
-#
-# class ContypeUpdateView(UpdateView):
-#     model = CongestionType
-#     template_name = 'traffic/create_contype.html'
-#     form_class = CongestionTypeForm
-#
-# class TrafficUpdateView(UpdateView):
-#     model = Traffic
-#     template_name = 'traffic/create_location.html'
-#     form_class = TrafficForm
-#
-# class LocationDeleteView(DeleteView):
-#     model = Location
-#     success_url = '/locations'
-#     template_name = 'traffic/delete.html'
-#
-# class RoadDeleteView(DeleteView):
-#     model = RoadSegment
-#     success_url = '/roads'
-#     template_name = 'traffic/delete.html'
-#
-# class ContypeDeleteView(DeleteView):
-#     model = CongestionType
-#     success_url = '/contypes'
-#     template_name = 'traffic/delete.html'
+def get_edges_for_point(request, point_id):
+    roads = RoadSegment.objects.filter(
+        models.Q(point_a_id=point_id) | models.Q(point_b_id=point_id)
+    ).select_related('point_a', 'point_b', 'traffic__congestion_type')
+    data = [serialize_road_segment(road) for road in roads]
+    return JsonResponse(data, safe=False)
