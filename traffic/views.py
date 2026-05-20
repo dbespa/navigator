@@ -2,11 +2,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db import models
-import random
-
+from django.utils.dateparse import parse_datetime
 from traffic.forms import LocationForm, RoadSegmentForm, CongestionTypeForm, TrafficForm
 from traffic.models import Location, RoadSegment, CongestionType, Traffic
-
+import random
 
 def serialize_road_segment(road):
     traffic = getattr(road, 'traffic', None)
@@ -30,7 +29,6 @@ def serialize_traffic(traffic):
         'time_coefficient': traffic.congestion_type.time_coefficient,
         'last_updated': traffic.last_updated.isoformat(),
     }
-
 
 def create_crud_handler(model, form_class, template_base, serialize_func=None):
     def handler(request, pk=None):
@@ -88,7 +86,7 @@ def create_crud_handler(model, form_class, template_base, serialize_func=None):
             if model == Traffic:
                 obj = get_object_or_404(Traffic.objects.select_related('road_segment', 'congestion_type'), pk=pk)
             elif model == RoadSegment:
-                obj = get_object_or_404(RoadSegment.objects.select_related('point_a', 'point_b'), pk=pk)
+                obj = get_object_or_404(RoadSegment.objects.select_related('point_a', 'point_b', 'traffic__congestion_type'), pk=pk)
             return render(request, f'traffic/detail_{template_base}.html', {template_base: obj})
 
         queryset = model.objects.all()
@@ -178,7 +176,6 @@ def randomize_congestion_api(request):
 
     return JsonResponse({'status': 'ok', 'updated': updated})
 
-
 @csrf_exempt
 def set_all_free_api(request):
     if request.method != 'POST':
@@ -241,14 +238,9 @@ def current_weights(request):
         data[traffic.road_segment.id] = travel_time
     return JsonResponse(data)
 
-
-from django.utils.dateparse import parse_datetime
-from django.http import JsonResponse, HttpRequest
-
-
 def weights_since(request):
     """
-    Параметры: ?since=2025-05-12T15:30:00 (ISO format)
+    Параметры: ?since=2025-05-12T15:30:00
     """
     since_str = request.GET.get('since')
     if not since_str:

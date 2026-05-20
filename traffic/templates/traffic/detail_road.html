@@ -13,7 +13,12 @@
         <p><strong>Расстояние:</strong> {{ road.distance_km }} км</p>
         {% if road.traffic %}
             <p><strong>Текущая загруженность:</strong>
-                <span class="badge" style="background-color: {{ road.traffic.congestion_type.color }};">
+                <span class="badge
+                    {% if road.traffic.congestion_type.name == 'Свободно' %}bg-success
+                    {% elif road.traffic.congestion_type.name == 'Затор' %}bg-warning
+                    {% elif road.traffic.congestion_type.name == 'Пробка' %}bg-danger
+                    {% else %}bg-secondary
+                    {% endif %}">
                     {{ road.traffic.congestion_type.name }}
                 </span>
             </p>

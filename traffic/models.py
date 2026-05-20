@@ -2,7 +2,6 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-
 class Location(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название")
     latitude = models.FloatField(verbose_name="Широта")
